@@ -7,6 +7,7 @@ import (
 	//  "strings"
 
 	"github.com/caddyserver/caddy/v2"
+  "github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	_ "github.com/caddyserver/caddy/v2/modules/standard"
@@ -14,30 +15,46 @@ import (
 
 func init() {
 	caddy.RegisterModule(ValidateVhostDir{})
-	httpcaddyfile.RegisterHandlerDirective("validate_vhost_dir", parseCaddyfile)
-}
-
-func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
-
-	var m ValidateVhostDir
-
-	// Move to the next argument in the Caddyfile, which should be the base path
-	if !h.NextArg() {
-			return nil, h.ArgErr() // No argument found for the directive
-	}
-	m.BasePath = h.Val() // Assign the argument to BasePath
-
-	// Check for any extraneous arguments
-	if h.NextArg() {
-			return nil, h.ArgErr() // Too many arguments provided
-	}
-
-	return m, nil
+	httpcaddyfile.RegisterHandlerDirective("validate_vhost_dir", parseDirective)
 }
 
 type ValidateVhostDir struct {
+  Name string
 	BasePath string `json:"base_path"`
 }
+
+func parseDirective(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
+
+	var m ValidateVhostDir
+	if err := m.UnmarshalCaddyfile(h.Dispenser); err != nil {
+			return nil, err
+	}
+	return m, nil
+}
+
+func (m *ValidateVhostDir) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+	d.Next() // consume directive name
+
+	if !d.Args(&m.Name) {
+		// not enough args
+		return d.ArgErr()
+	}
+	if d.NextArg() {
+		// optional arg
+		m.BasePath = d.Val()
+	}
+	if d.NextArg() {
+		// too many args
+		return d.ArgErr()
+	}
+
+	return nil
+}
+
+
+// Interface guard
+var _ caddyfile.Unmarshaler = (*ValidateVhostDir)(nil)
+
 
 func (ValidateVhostDir) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
