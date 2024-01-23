@@ -17,16 +17,21 @@ func init() {
 	httpcaddyfile.RegisterHandlerDirective("validate_vhost_dir", parseCaddyfile)
 }
 
-// Define the function to parse the Caddyfile directive
 func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
+
 	var m ValidateVhostDir
-	// Assuming the directive is of the form: validate_vhost_dir <base_path>
-	if !h.Next() {
-		return nil, h.ArgErr() // No arguments were found
+
+	// Move to the next argument in the Caddyfile, which should be the base path
+	if !h.NextArg() {
+			return nil, h.ArgErr() // No argument found for the directive
 	}
-	if !h.AllArgs(&m.BasePath) { // Expecting one argument: BasePath
-		return nil, h.ArgErr() // Too many arguments or wrong argument type
+	m.BasePath = h.Val() // Assign the argument to BasePath
+
+	// Check for any extraneous arguments
+	if h.NextArg() {
+			return nil, h.ArgErr() // Too many arguments provided
 	}
+
 	return m, nil
 }
 
