@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+  "log"
 	//  "strings"
 
 	"github.com/caddyserver/caddy/v2"
@@ -33,8 +34,11 @@ func parseDirective(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 }
 
 func (m *ValidateVhostDir) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+
+  log.Println("Starting to unmarshal Caddyfile for ValidateVhostDir")
 	d.Next() // consume directive name
 
+  log.Printf("ValidateVhostDir after directive name parsed: %+v\n", m) 
 	if !d.Args(&m.Name) {
 		// not enough args
 		return d.ArgErr()
@@ -42,6 +46,7 @@ func (m *ValidateVhostDir) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	if d.NextArg() {
 		// optional arg
 		m.BasePath = d.Val()
+    log.Printf("ValidateVhostDir after first directive argument parsed: %+v\n", m) 
 	}
 	if d.NextArg() {
 		// too many args
