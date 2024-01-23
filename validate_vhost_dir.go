@@ -7,12 +7,27 @@ import (
 	//  "strings"
 
 	"github.com/caddyserver/caddy/v2"
+  "github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	_ "github.com/caddyserver/caddy/v2/modules/standard"
 )
 
 func init() {
 	caddy.RegisterModule(ValidateVhostDir{})
+  httpcaddyfile.RegisterHandlerDirective("validate_vhost_dir", parseCaddyfile)
+}
+
+// Define the function to parse the Caddyfile directive
+func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
+    var m ValidateVhostDir
+    // Assuming the directive is of the form: validate_vhost_dir <base_path>
+    if !h.Next() {
+        return nil, h.ArgErr() // No arguments were found
+    }
+    if !h.AllArgs(&m.BasePath) { // Expecting one argument: BasePath
+        return nil, h.ArgErr() // Too many arguments or wrong argument type
+    }
+    return m, nil
 }
 
 type ValidateVhostDir struct {
