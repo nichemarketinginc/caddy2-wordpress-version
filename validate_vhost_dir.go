@@ -21,7 +21,7 @@ func init() {
 
 type ValidateVhostDir struct {
 
-	VhostsPath string `json:"base_path"`
+	VhostsPath string `json:"vhosts_path"`
 }
 
 func parseDirective(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
