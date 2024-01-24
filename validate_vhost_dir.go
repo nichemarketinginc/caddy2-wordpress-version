@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-  "log"
-	//  "strings"
+  // "log"
+	// "strings"
 
 	"github.com/caddyserver/caddy/v2"
   "github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -20,8 +20,8 @@ func init() {
 }
 
 type ValidateVhostDir struct {
-  Name string
-	BasePath string `json:"base_path"`
+
+	VhostsPath string `json:"base_path"`
 }
 
 func parseDirective(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
@@ -35,19 +35,24 @@ func parseDirective(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 
 func (m *ValidateVhostDir) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
   
-	if !d.Args(&m.Name, &m.BasePath) {
-    log.Println("No args were found at all after directive.")
-		// not enough args
-		return d.ArgErr()
+	d.NextArg()
+
+	for d.NextBlock(0) {
+		var err error
+
+		switch d.Val() {
+			case "vhosts_path":
+				if !d.Args(&m.VhostsPath) {
+					err = d.ArgErr()
+				}
+				return nil
+			default:
+				err = d.Errf("Unknown validate_vhost_dir arg")
+		}
+    if err != nil {
+      return d.Errf("Error parsing %s: %s", d.Val(), err)
+    }
 	}
-
-  log.Printf("ValidateVhostDir after first directive argument parsed: %+v\n", m) 
-
-	if d.NextArg() {
-		// too many args
-		return d.ArgErr()
-	}
-
 	return nil
 }
 
@@ -71,7 +76,7 @@ func (m ValidateVhostDir) ServeHTTP(w http.ResponseWriter, r *http.Request, next
 		return nil
 	}
 
-	dirPath := filepath.Join(m.BasePath, domain)
+	dirPath := filepath.Join(m.VhostsPath, domain)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		// If the directory does not exist, respond with StatusNotFound
 		w.WriteHeader(http.StatusNotFound)
