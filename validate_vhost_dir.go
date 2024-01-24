@@ -35,9 +35,7 @@ func parseDirective(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 
 func (m *ValidateVhostDir) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
   
-  d.Next()
-
-	if !d.Args(&m.BasePath) {
+	if !d.Args(&m.Name, &m.BasePath) {
     log.Println("No args were found at all after directive.")
 		// not enough args
 		return d.ArgErr()
