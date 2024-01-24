@@ -37,12 +37,14 @@ func (m *ValidateVhostDir) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 
   log.Println("Starting to unmarshal Caddyfile for ValidateVhostDir")
 	d.Next() // consume directive name
+  log.Println("Directive name consumed")
 
-  log.Printf("ValidateVhostDir after directive name parsed: %+v\n", m) 
 	if !d.Args(&m.Name) {
+    log.Println("No args were found at all after directive.")
 		// not enough args
 		return d.ArgErr()
 	}
+  log.Printf("ValidateVhostDir after directive name parsed: %+v\n", m) 
 	if d.NextArg() {
 		// optional arg
 		m.BasePath = d.Val()
