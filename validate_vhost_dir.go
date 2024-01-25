@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-  // "log"
+  "log"
 	// "strings"
 
 	"github.com/caddyserver/caddy/v2"
@@ -77,11 +77,16 @@ func (m ValidateVhostDir) ServeHTTP(w http.ResponseWriter, r *http.Request, next
 	}
 
 	dirPath := filepath.Join(m.VhostsPath, domain)
+
+  log.Printf("dirPath: %s", dirPath)
+
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		// If the directory does not exist, respond with StatusNotFound
 		w.WriteHeader(http.StatusNotFound)
 		return nil
 	}
+
+  log.Printf("apparently dirPath: %s exists?", dirPath)
 
 	// If the directory exists, respond with StatusOK
 	w.WriteHeader(http.StatusOK)
