@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
   "log"
+  "fmt"
 	// "strings"
 
 	"github.com/caddyserver/caddy/v2"
@@ -70,6 +71,8 @@ func (ValidateVhostDir) CaddyModule() caddy.ModuleInfo {
 
 func (m ValidateVhostDir) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
 
+  fmt.Println("Request accepted.")
+
 	domain := r.URL.Query().Get("domain")
 	if domain == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -78,6 +81,7 @@ func (m ValidateVhostDir) ServeHTTP(w http.ResponseWriter, r *http.Request, next
 
 	dirPath := filepath.Join(m.VhostsPath, domain)
 
+  fmt.Println("dirPath:", dirPath)
   log.Printf("dirPath: %s", dirPath)
 
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
