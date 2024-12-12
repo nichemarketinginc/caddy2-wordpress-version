@@ -82,6 +82,12 @@ func (m ValidateVhostDir) ServeHTTP(w http.ResponseWriter, r *http.Request, next
 		return nil
 	}
 
+	// Strip "www." prefix if it exists
+	if len(domain) > 4 && domain[:4] == "www." {
+		domain = domain[4:]
+		log.Printf("[ValidateVhostDir] Stripped www. prefix, domain is now: %s", domain)
+	}
+
 	dirPath := filepath.Join(m.VhostsPath, domain)
 
   log.Printf("[ValidateVhostDir] dirPath: %s", dirPath)
