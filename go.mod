@@ -1,4 +1,4 @@
-module github.com/timeofmind/caddy2-validate-vhost-dir
+module github.com/nichemarketinginc/caddy2-validate-vhost-dir
 
 go 1.21.6
 
