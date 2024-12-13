@@ -122,7 +122,7 @@ func (m *WPVersion) cacheVersion(host, version string) {
 func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
 	var m WPVersion
 	err := m.UnmarshalCaddyfile(h.Dispenser)
-	return m, err
+	return &m, err
 }
 
 // UnmarshalCaddyfile implements caddyfile.Unmarshaler.
