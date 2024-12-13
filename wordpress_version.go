@@ -1,10 +1,10 @@
 package wpversion
 
 import (
-	"strconv"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+  "strconv"
 	"strings"
 	"sync"
 	"time"
@@ -37,7 +37,7 @@ type cacheEntry struct {
 func (WPVersion) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID:  "http.handlers.wp_version",
-    New: func() caddy.Module { return &WPVersion{} },
+		New: func() caddy.Module { return &WPVersion{} },
 	}
 }
 
@@ -137,11 +137,11 @@ func (m *WPVersion) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 			case "wp_version_cache_expiry":
 				var expiryHoursStr string
 				if !d.Args(&expiryHoursStr) {
-						return d.ArgErr()
+					return d.ArgErr()
 				}
-				expiryHours, err := strconv.Atoi(expiryHoursStr) // Convert to integer
+				expiryHours, err := strconv.Atoi(expiryHoursStr)
 				if err != nil {
-						return d.Errf("invalid value for wp_version_cache_expiry: %s", expiryHoursStr)
+					return d.Errf("invalid value for wp_version_cache_expiry: %s", expiryHoursStr)
 				}
 				m.CacheExpiryDuration = time.Duration(expiryHours) * time.Hour
 			default:
@@ -152,9 +152,16 @@ func (m *WPVersion) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	return nil
 }
 
-// Interface guards
-var (
-	_ caddyhttp.MiddlewareHandler = (*WPVersion)(nil)
-	_ caddyfile.Unmarshaler       = (*WPVersion)(nil)
-)
+// OrderedConfig allows this middleware to define its order in the HTTP handler chain.
+func (WPVersion) Provision(ctx caddy.Context) error {
+	return nil
+}
+
+func (WPVersion) Cleanup() error {
+	return nil
+}
+
+func (WPVersion) InterfaceGuard() caddyhttp.MiddlewareHandler {
+	return (*WPVersion)(nil)
+}
 
