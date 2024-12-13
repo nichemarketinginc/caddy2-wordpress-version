@@ -1,4 +1,4 @@
-module github.com/nichemarketinginc/caddy2-validate-vhost-dir
+module github.com/nichemarketinginc/caddy2-wordpress-version
 
 go 1.21.6
 
