@@ -1,7 +1,7 @@
 package wpversion
 
 import (
-	"fmt"
+	"strconv"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -37,7 +37,7 @@ type cacheEntry struct {
 func (WPVersion) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID:  "http.handlers.wp_version",
-		New: func() caddy.Module { return new(WPVersion) },
+    New: func() caddy.Module { return &WPVersion{} },
 	}
 }
 
@@ -135,9 +135,13 @@ func (m *WPVersion) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 					return d.ArgErr()
 				}
 			case "wp_version_cache_expiry":
-				var expiryHours int
-				if !d.Args(&expiryHours) {
-					return d.ArgErr()
+				var expiryHoursStr string
+				if !d.Args(&expiryHoursStr) {
+						return d.ArgErr()
+				}
+				expiryHours, err := strconv.Atoi(expiryHoursStr) // Convert to integer
+				if err != nil {
+						return d.Errf("invalid value for wp_version_cache_expiry: %s", expiryHoursStr)
 				}
 				m.CacheExpiryDuration = time.Duration(expiryHours) * time.Hour
 			default:
