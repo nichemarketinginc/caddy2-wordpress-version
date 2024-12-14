@@ -1,11 +1,11 @@
 package wpversion
 
 import (
-	"context"
-	"io/ioutil"
+	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
-  "strconv"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,10 +16,8 @@ import (
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 )
 
-const wpVersionContextKey = "wp_version"
-
 func init() {
-	caddy.RegisterModule(WPVersion{})
+	caddy.RegisterModule(&WPVersion{})
 	httpcaddyfile.RegisterHandlerDirective("wp_version", parseCaddyfile)
 }
 
@@ -37,7 +35,7 @@ type cacheEntry struct {
 }
 
 // CaddyModule returns the Caddy module information.
-func (WPVersion) CaddyModule() caddy.ModuleInfo {
+func (m *WPVersion) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID:  "http.handlers.wp_version",
 		New: func() caddy.Module { return &WPVersion{} },
@@ -46,26 +44,38 @@ func (WPVersion) CaddyModule() caddy.ModuleInfo {
 
 // ServeHTTP implements the caddyhttp.MiddlewareHandler interface.
 func (m *WPVersion) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
+	// Ensure the host is not empty
 	host := r.Host
 	if host == "" {
-		return next.ServeHTTP(w, r)
+		return next.ServeHTTP(w, r) // Skip middleware if no host is provided
 	}
 
+	// Retrieve the replacer from the request context
+	repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+
+	// Try to get the WordPress version from cache
 	version := m.getCachedVersion(host)
 	if version == "" {
+		// Attempt to detect the version
 		version = m.detectWPVersion(host)
 		if version != "" {
-			m.cacheVersion(host, version)
+			m.cacheVersion(host, version) // Cache the detected version
 		}
 	}
 
-	if version != "" {
-		// Set WordPress version in both header and request context
-		r.Header.Set("X-WP-Core-Version", version)
-		ctx := context.WithValue(r.Context(), wpVersionContextKey, version)
-		r = r.WithContext(ctx)
+	// If version is still blank, respond with an error
+	if version == "" {
+		http.Error(w, "Unable to determine WordPress version for the requested host", http.StatusServiceUnavailable)
+		return nil // Stop further request processing
 	}
 
+	// Set WordPress version in both header and request context
+	r.Header.Set("X-WP-Core-Version", version)
+
+	// Set the detected version in the replacer
+	repl.Set("wp-version", version)
+
+	// Continue processing the request
 	return next.ServeHTTP(w, r)
 }
 
@@ -74,7 +84,7 @@ func (m *WPVersion) detectWPVersion(host string) string {
 	dirPath := filepath.Join(m.BasePath, host, "httpdocs")
 	versionFile := filepath.Join(dirPath, "wp-includes", "version.php")
 
-	data, err := ioutil.ReadFile(versionFile)
+	data, err := os.ReadFile(versionFile)
 	if err != nil {
 		return ""
 	}
@@ -159,20 +169,28 @@ func (m *WPVersion) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 }
 
 func (m *WPVersion) Provision(ctx caddy.Context) error {
-	caddy.RegisterPlaceholderFunc("wp-version", func(r *http.Request) (interface{}, error) {
-		if version, ok := r.Context().Value(wpVersionContextKey).(string); ok {
-			return version, nil
-		}
-		return "", nil
-	})
+
+	// Resolve global placeholders (e.g., environment variables) in BasePath
+	repl := caddy.NewReplacer()
+	m.BasePath = repl.ReplaceAll(m.BasePath, "")
+
+	// Ensure BasePath is set and valid
+	if m.BasePath == "" {
+		return fmt.Errorf("base_path cannot be empty")
+	}
+
+	// Initialize cache if not already done
+	if m.cache == nil {
+		m.cache = make(map[string]cacheEntry)
+	}
+
 	return nil
 }
 
-func (WPVersion) Cleanup() error {
+func (m *WPVersion) Cleanup() error {
 	return nil
 }
 
-func (WPVersion) InterfaceGuard() caddyhttp.MiddlewareHandler {
+func (m *WPVersion) InterfaceGuard() caddyhttp.MiddlewareHandler {
 	return (*WPVersion)(nil)
 }
-
