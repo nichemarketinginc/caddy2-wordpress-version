@@ -1,6 +1,7 @@
 package wpversion
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -14,6 +15,8 @@ import (
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 )
+
+const wpVersionContextKey = "wp_version"
 
 func init() {
 	caddy.RegisterModule(WPVersion{})
@@ -57,7 +60,10 @@ func (m *WPVersion) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 	}
 
 	if version != "" {
+		// Set WordPress version in both header and request context
 		r.Header.Set("X-WP-Core-Version", version)
+		ctx := context.WithValue(r.Context(), wpVersionContextKey, version)
+		r = r.WithContext(ctx)
 	}
 
 	return next.ServeHTTP(w, r)
@@ -152,8 +158,13 @@ func (m *WPVersion) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	return nil
 }
 
-// OrderedConfig allows this middleware to define its order in the HTTP handler chain.
-func (WPVersion) Provision(ctx caddy.Context) error {
+func (m *WPVersion) Provision(ctx caddy.Context) error {
+	caddy.RegisterPlaceholderFunc("wp-version", func(r *http.Request) (interface{}, error) {
+		if version, ok := r.Context().Value(wpVersionContextKey).(string); ok {
+			return version, nil
+		}
+		return "", nil
+	})
 	return nil
 }
 
